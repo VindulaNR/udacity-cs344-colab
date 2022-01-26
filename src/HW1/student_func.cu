@@ -56,12 +56,20 @@ void rgba_to_greyscale(const uchar4* const rgbaImage,
 	// threadIdx.x : the col index of this pixel in image
 	// in 2-D way  : this pixel is at rgbaImage[row_idx][col_idx]
 	// in 1-D way  : this pixel is at rgbaImage[blockIdx.x*row_idx+col_idx]
-	int row_idx = blockIdx.x;
+	/*int row_idx = blockIdx.x;
 	int col_idx = threadIdx.x;
 	int offset = blockDim.x * row_idx + col_idx;
 	uchar4 rgbaPixel = rgbaImage[offset];
 	float ChannelSum = .299f * rgbaPixel.x + .587f * rgbaPixel.y + .114f * rgbaPixel.z;
-	greyImage[offset] = ChannelSum;
+	greyImage[offset] = ChannelSum;*/
+	size_t idx_x = threadIdx.x + blockIdx.x*blockDim.x;
+	size_t idx_y = threadIdx.y + blockIdx.y*blockDim.y;
+
+	if (idx_x >= numRows || idx_y >= numCols) return; //it can happen on the "remainder" block
+	
+	size_t idxvec = idx_x*numCols + idx_y;
+	uchar4 rgb_value = rgbaImage[idxvec];
+	greyImage[idxvec] = (unsigned char)(.299f*rgb_value.x + .587f*rgb_value.y + .114f*rgb_value.z);
 }
 
 void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
@@ -70,9 +78,14 @@ void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_r
   //You must fill in the correct sizes for the blockSize and gridSize
   //currently only one block with one thread is being launched 
 	// each row is a block, the number of threads in a block is the number of columns in that row
-	const dim3 blockSize(numRows, 1, 1);  //TODO
+	/*const dim3 blockSize(numRows, 1, 1);  //TODO
 	const dim3 gridSize(numCols, 1, 1);  //TODO
-	rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
+	rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);*/
+ const dim3 blockSize(blockWidth,blockWidth, 1); 
+  unsigned int numBlocksX = (unsigned int)(numRows / blockWidth + 1);
+  unsigned int numBlocksY = (unsigned int)(numCols / blockWidth + 1);
+  const dim3 gridSize(numBlocksX,numBlocksY, 1);  
+  rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
   
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
 
