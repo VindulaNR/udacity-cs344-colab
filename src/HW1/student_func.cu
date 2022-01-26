@@ -60,11 +60,11 @@ void rgba_to_greyscale(const uchar4* const rgbaImage,
 	int col_idx = threadIdx.x;
 	int offset = blockDim.x * row_idx + col_idx;
 	// Check if this position is valid or not
-	if(row_idx < numRows && col_idx < numCols){
+	//if(row_idx < numRows && col_idx < numCols){
 		uchar4 rgbaPixel = rgbaImage[offset];
 		float ChannelSum = .299f * rgbaPixel.x + .587f * rgbaPixel.y + .114f * rgbaPixel.z;
 		greyImage[offset] = ChannelSum;
-	}
+	//}
 }
 
 void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
